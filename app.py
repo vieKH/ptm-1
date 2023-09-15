@@ -40,11 +40,16 @@ css = '''
 
 class AnimateController:
     def __init__(self):
+        # config dirs
         self.basedir = os.getcwd()
-        self.stable_diffusion_dir = os.path.join(self.basedir, 'models', 'StableDiffusion')
-        self.motion_module_dir = os.path.join(self.basedir, 'models', 'Motion_Module')
-        self.personalized_model_dir = os.path.join(self.basedir, 'models', 'DreamBooth_LoRA')
-        self.savedir = os.path.join(self.basedir, 'samples', datetime.now().strftime('Gradio-%Y-%m-%dT%H-%M-%S'))
+        self.stable_diffusion_dir = os.path.join(self.basedir,
+                                                 'models', 'StableDiffusion')
+        self.motion_module_dir = os.path.join(self.basedir,
+                                              'models', 'Motion_Module')
+        self.personalized_model_dir = os.path.join(self.basedir,
+                                                   'models', 'DreamBooth_LoRA')
+        self.savedir = os.path.join(self.basedir,
+                                    'samples', datetime.now().strftime('Gradio-%Y-%m-%dT%H-%M-%S'))
         self.savedir_sample = os.path.join(self.savedir, 'sample')
         os.makedirs(self.savedir, exist_ok=True)
         self.stable_diffusion_list = []
@@ -53,6 +58,8 @@ class AnimateController:
         self.refresh_stable_diffusion()
         self.refresh_motion_module()
         self.refresh_personalized_model()
+
+        # config models
         self.tokenizer = None
         self.text_encoder = None
         self.vae = None
@@ -73,9 +80,12 @@ class AnimateController:
         self.personalized_model_list = [os.path.basename(p) for p in personalized_model_list]
 
     def update_stable_diffusion(self, stable_diffusion_dropdown):
-        self.tokenizer = CLIPTokenizer.from_pretrained(stable_diffusion_dropdown, subfolder='tokenizer')
-        self.text_encoder = CLIPTextModel.from_pretrained(stable_diffusion_dropdown, subfolder='text_encoder').cuda()
-        self.vae = AutoencoderKL.from_pretrained(stable_diffusion_dropdown, subfolder='vae').cuda()
+        self.tokenizer = CLIPTokenizer.from_pretrained(stable_diffusion_dropdown,
+                                                       subfolder='tokenizer')
+        self.text_encoder = CLIPTextModel.from_pretrained(stable_diffusion_dropdown,
+                                                          subfolder='text_encoder').cuda()
+        self.vae = AutoencoderKL.from_pretrained(stable_diffusion_dropdown,
+                                                 subfolder='vae').cuda()
         self.unet = UNet3DConditionModel.from_pretrained_2d(stable_diffusion_dropdown, subfolder='unet',
                                                             unet_additional_kwargs=OmegaConf.to_container(
                                                                 self.inference_config.unet_additional_kwargs)).cuda()
@@ -97,23 +107,27 @@ class AnimateController:
             gr.Info(f'Please select a pretrained model path.')
             return gr.Dropdown.update(value=None)
         else:
-            base_model_dropdown = os.path.join(self.personalized_model_dir, base_model_dropdown)
+            base_model_dropdown = os.path.join(self.personalized_model_dir,
+                                               base_model_dropdown)
             base_model_state_dict = {}
             with safe_open(base_model_dropdown, framework='pt', device='cpu') as f:
                 for key in f.keys():
                     base_model_state_dict[key] = f.get_tensor(key)
 
-            converted_vae_checkpoint = convert_ldm_vae_checkpoint(base_model_state_dict, self.vae.config)
+            converted_vae_checkpoint = convert_ldm_vae_checkpoint(base_model_state_dict,
+                                                                  self.vae.config)
             self.vae.load_state_dict(converted_vae_checkpoint)
 
-            converted_unet_checkpoint = convert_ldm_unet_checkpoint(base_model_state_dict, self.unet.config)
+            converted_unet_checkpoint = convert_ldm_unet_checkpoint(base_model_state_dict,
+                                                                    self.unet.config)
             self.unet.load_state_dict(converted_unet_checkpoint, strict=False)
 
             self.text_encoder = convert_ldm_clip_checkpoint(base_model_state_dict)
             return gr.Dropdown.update()
 
     def update_lora_model(self, lora_model_dropdown):
-        lora_model_dropdown = os.path.join(self.personalized_model_dir, lora_model_dropdown)
+        lora_model_dropdown = os.path.join(self.personalized_model_dir,
+                                           lora_model_dropdown)
         self.lora_model_state_dict = {}
         if lora_model_dropdown == 'none':
             pass
@@ -139,11 +153,11 @@ class AnimateController:
             seed_textbox
     ):
         if self.unet is None:
-            raise gr.Error(f'Please select a pretrained model path.')
+            raise gr.Error('Please select a pretrained model path.')
         if motion_module_dropdown == '':
-            raise gr.Error(f'Please select a motion module.')
+            raise gr.Error('Please select a motion module.')
         if base_model_dropdown == '':
-            raise gr.Error(f'Please select a base DreamBooth model.')
+            raise gr.Error('Please select a base DreamBooth model.')
 
         if is_xformers_available():
             self.unet.enable_xformers_memory_efficient_attention()
@@ -206,7 +220,8 @@ def ui():
             '''
             # [AnimateDiff: Animate Your Personalized Text-to-Image Diffusion Models without Specific Tuning]
             (https://arxiv.org/abs/2307.04725)
-            Yuwei Guo, Ceyuan Yang*, Anyi Rao, Yaohui Wang, Yu Qiao, Dahua Lin, Bo Dai (*Corresponding Author)<br>
+            Yuwei Guo, Ceyuan Yang*, Anyi Rao, Yaohui Wang,
+            Yu Qiao, Dahua Lin, Bo Dai (*Corresponding Author)<br>
             [Arxiv Report](https://arxiv.org/abs/2307.04725)
             [Project Page](https://animatediff.github.io/) 
             Github](https://github.com/guoyww/animatediff/)
@@ -228,7 +243,8 @@ def ui():
                                                  inputs=[stable_diffusion_dropdown],
                                                  outputs=[stable_diffusion_dropdown])
 
-                stable_diffusion_refresh_button = gr.Button(value='\U0001F503', elem_classes='toolbutton')
+                stable_diffusion_refresh_button = gr.Button(value='\U0001F503',
+                                                            elem_classes='toolbutton')
 
                 def update_stable_diffusion():
                     controller.refresh_stable_diffusion()
@@ -243,23 +259,27 @@ def ui():
                     choices=controller.motion_module_list,
                     interactive=True,
                 )
-                motion_module_dropdown.change(fn=controller.update_motion_module, inputs=[motion_module_dropdown],
+                motion_module_dropdown.change(fn=controller.update_motion_module,
+                                              inputs=[motion_module_dropdown],
                                               outputs=[motion_module_dropdown])
 
-                motion_module_refresh_button = gr.Button(value='\U0001F503', elem_classes='toolbutton')
+                motion_module_refresh_button = gr.Button(value='\U0001F503',
+                                                         elem_classes='toolbutton')
 
                 def update_motion_module():
                     controller.refresh_motion_module()
                     return gr.Dropdown.update(choices=controller.motion_module_list)
 
-                motion_module_refresh_button.click(fn=update_motion_module, inputs=[], outputs=[motion_module_dropdown])
+                motion_module_refresh_button.click(fn=update_motion_module,
+                                                   inputs=[], outputs=[motion_module_dropdown])
 
                 base_model_dropdown = gr.Dropdown(
                     label='Select base Dreambooth model (required)',
                     choices=controller.personalized_model_list,
                     interactive=True,
                 )
-                base_model_dropdown.change(fn=controller.update_base_model, inputs=[base_model_dropdown],
+                base_model_dropdown.change(fn=controller.update_base_model,
+                                           inputs=[base_model_dropdown],
                                            outputs=[base_model_dropdown])
 
                 lora_model_dropdown = gr.Dropdown(
@@ -268,12 +288,15 @@ def ui():
                     value='none',
                     interactive=True,
                 )
-                lora_model_dropdown.change(fn=controller.update_lora_model, inputs=[lora_model_dropdown],
+                lora_model_dropdown.change(fn=controller.update_lora_model,
+                                           inputs=[lora_model_dropdown],
                                            outputs=[lora_model_dropdown])
 
-                lora_alpha_slider = gr.Slider(label='LoRA alpha', value=0.8, minimum=0, maximum=2, interactive=True)
+                lora_alpha_slider = gr.Slider(label='LoRA alpha',
+                                              value=0.8, minimum=0, maximum=2, interactive=True)
 
-                personalized_refresh_button = gr.Button(value='\U0001F503', elem_classes='toolbutton')
+                personalized_refresh_button = gr.Button(value='\U0001F503',
+                                                        elem_classes='toolbutton')
 
                 def update_personalized_model():
                     controller.refresh_personalized_model()
@@ -283,7 +306,8 @@ def ui():
                     ]
 
                 personalized_refresh_button.click(fn=update_personalized_model, inputs=[],
-                                                  outputs=[base_model_dropdown, lora_model_dropdown])
+                                                  outputs=[base_model_dropdown,
+                                                           lora_model_dropdown])
 
         with gr.Column(variant='panel'):
             gr.Markdown(
@@ -298,25 +322,35 @@ def ui():
             with gr.Row().style(equal_height=False):
                 with gr.Column():
                     with gr.Row():
-                        sampler_dropdown = gr.Dropdown(label='Sampling method', choices=list(scheduler_dict.keys()),
+                        sampler_dropdown = gr.Dropdown(label='Sampling method',
+                                                       choices=list(scheduler_dict.keys()),
                                                        value=list(scheduler_dict.keys())[0])
-                        sample_step_slider = gr.Slider(label='Sampling steps', value=25, minimum=10, maximum=100,
-                                                       step=1)
+                        sample_step_slider = gr.Slider(label='Sampling steps',
+                                                       value=25, minimum=10, maximum=100, step=1)
 
-                    width_slider = gr.Slider(label='Width', value=512, minimum=256, maximum=1024, step=64)
-                    height_slider = gr.Slider(label='Height', value=512, minimum=256, maximum=1024, step=64)
-                    length_slider = gr.Slider(label='Animation length', value=16, minimum=8, maximum=24, step=1)
-                    cfg_scale_slider = gr.Slider(label='CFG Scale', value=7.5, minimum=0, maximum=20)
+                    width_slider = gr.Slider(label='Width',
+                                             value=512, minimum=256, maximum=1024, step=64)
+                    height_slider = gr.Slider(label='Height',
+                                              value=512, minimum=256, maximum=1024, step=64)
+                    length_slider = gr.Slider(label='Animation length',
+                                              value=16, minimum=8, maximum=24, step=1)
+                    cfg_scale_slider = gr.Slider(label='CFG Scale',
+                                                 value=7.5, minimum=0, maximum=20)
 
                     with gr.Row():
                         seed_textbox = gr.Textbox(label='Seed', value=-1)
-                        seed_button = gr.Button(value='\U0001F3B2', elem_classes='toolbutton')
-                        seed_button.click(fn=lambda: gr.Textbox.update(value=random.randint(1, 1e8)), inputs=[],
-                                          outputs=[seed_textbox])
+                        seed_button = gr.Button(value='\U0001F3B2',
+                                                elem_classes='toolbutton')
+                        seed_button.click(
+                            fn=lambda: gr.Textbox.update(
+                                value=random.randint(1, 1e8)),
+                            inputs=[], outputs=[seed_textbox])
 
-                    generate_button = gr.Button(value='Generate', variant='primary')
+                    generate_button = gr.Button(value='Generate',
+                                                variant='primary')
 
-                result_video = gr.Video(label='Generated Animation', interactive=False)
+                result_video = gr.Video(label='Generated Animation',
+                                        interactive=False)
 
             generate_button.click(
                 fn=controller.animate,
