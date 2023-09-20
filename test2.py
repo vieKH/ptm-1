@@ -1,8 +1,8 @@
-import os
+from bs4 import BeautifulSoup
 import logging
+import os
 import requests
 from tqdm import tqdm
-from bs4 import BeautifulSoup
 
 
 HEADERS = {"User-Agent": "Mozilla/5.0 Mozilla/5.0 "
