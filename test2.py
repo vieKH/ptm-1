@@ -38,7 +38,6 @@ def write_images_to_file(filename, image_url) -> None:
     :param image_url: Адресс фота
     :return: Не возращается
     """
-
     picture = requests.get(image_url, HEADERS)
     with open(filename, "wb") as f:
         f.write(picture.content)
