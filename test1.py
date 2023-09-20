@@ -6,7 +6,8 @@ import pandas as pd
 
 def numerical(labels_path: pd.Series) -> pd.Series:
     """
-     функуия для добавления норера изображений (cat : 0, dog :1)
+    Функция для добавления норера изображений (cat : 0, dog :1)
+
     :param labels_path: Series метки
     :return: Series с номером
     """
@@ -19,10 +20,11 @@ def numerical(labels_path: pd.Series) -> pd.Series:
     return pd.Series(numerical_list)
 
 
-def img_shape(imgs_path: pd.Series):
+def img_shape(imgs_path: pd.Series) -> tuple[pd.Series, pd.Series, pd.Series]:
     """
-    функуия для получения значении ширины высоты и глубины изображений
-    :param imgs_path: пути к каждому изображениям
+    Функция для получения значении ширины высоты и глубины изображений
+
+    :param imgs_path: Пути к каждому изображениям
     :return: Series ширины высоты и глубины
     """
     width = []
@@ -39,63 +41,81 @@ def img_shape(imgs_path: pd.Series):
 
 def label_filter(df1: pd.DataFrame, label: str) -> pd.DataFrame:
     """
-     функуия для получения значении заданной меткой
+    Функция для получения значении заданной меткой
+
     :param df1: Заданный датафрейм
-    :param label: заданная метка
+    :param label: Заданная метка
     :return: Результат после фильтрации
     """
-    return df1[df.Label == label]
+    return df1[df1.Label == label]
 
 
-def mul_filter(df2: pd.DataFrame, max_width: int, max_height: int, label: str) -> pd.DataFrame:
+def mul_filter(df2: pd.DataFrame, max_width: int,
+               max_height: int, label: str) -> pd.DataFrame:
     """
+    Эта функция для фильтрации данных ответа пользователя.
 
     :param df2: Заданный датафрейм
-    :param max_width: заданная максимальная ширина
-    :param max_height: заданная максимальная высота
-    :param label: заданная метка
+    :param max_width: Заданная максимальная ширина
+    :param max_height: Заданная максимальная высота
+    :param label: Заданная метка
     :return: Результат после фильтрации
     """
-    return df[((df2.Label == label) & (df2.Width <= max_width) & (df2.Height <= max_height))]
+    return df2[((df2.Label == label) & (df2.Width <= max_width)
+               & (df2.Height <= max_height))]
 
 
 def count_pixels(df3: pd.DataFrame) -> tuple:
     """
-    Функция чтобы выполнить группировку DataFrame по метке класса с вычислением максимального, минимального
-                                                        и среднего значения по количеству пикселей
+    Функция чтобы выполнить группировку DataFrame по метке класса
+    с вычислением максимального, минимального
+    и среднего значения по количеству пикселей
+
     :param df3: Заданный датафрейм
-    :return: Кортеж из 3 группировок: максимальное, минимальное и среднее количество пикселей изображения.
+    :return: Кортеж из 3 группировок: максимальное,
+             минимальное и среднее количество пикселей изображения.
     """
-    df['pixels'] = df['width'] * df['height']
-    return df3.groupby('Label').max(), df3.groupby('Label').min(), df3.groupby('Label').mean()
+    df3['pixels'] = df3['width'] * df3['height']
+    return (df3.groupby('Label').max(),
+            df3.groupby('Label').min(),
+            df3.groupby('Label').mean())
 
 
-def histograms(df4: pd.DataFrame, label: str) -> list:
+def count_data_histogram(df4: pd.DataFrame, label: str) -> list:
     """
-    Функция для вычислить значения количества пикселей соответствует уровню яркости изображения
+    Функция для вычислить значения количества пикселей
+    соответствует уровню яркости изображения
+
     :param df4: Заданный датафрейм
     :param label: Заданная метка
-    :return: значения количества пикселей соответствует уровню яркости изображения
+    :return: Значения количества пикселей
+             соответствует уровню яркости изображения
     """
     df_now = label_filter(df4, label)
     imgs_path = df_now.Absolute_Path.to_numpy()
     img_path = np.random.choice(imgs_path)
     img = cv2.imread(img_path)
     img_width, img_height, img_channel = img.shape
-    his1 = cv2.calcHist([img], [0], None, [256], [0, 256]) / (img_width * img_height)
-    his2 = cv2.calcHist([img], [1], None, [256], [0, 256]) / (img_width * img_height)
-    his3 = cv2.calcHist([img], [2], None, [256], [0, 256]) / (img_width * img_height)
-    return[his1, his2, his3]
+
+    his1 = (cv2.calcHist([img], [0], None, [256], [0, 256])) / \
+           (img_width * img_height)
+    his2 = (cv2.calcHist([img], [1], None, [256], [0, 256])) / \
+           (img_width * img_height)
+    his3 = (cv2.calcHist([img], [2], None, [256], [0, 256])) / \
+           (img_width * img_height)
+
+    return [his1, his2, his3]
 
 
-def draw(df5: pd.DataFrame, label: str):
+def draw_histogram(df5: pd.DataFrame, label: str) -> None:
     """
     Функция для построить график гистограмм
+
     :param df5: Заданный датафрейм
     :param label: Метка нужна исследовать
-    :return: не возрашать значения
+    :return: Не возрашать значения
     """
-    hists = histograms(df5, label)
+    hists = count_data_histogram(df5, label)
     color = ['b', 'g', 'r']
     for i in range(3):
         plt.plot(hists[i], color=color[i])
@@ -112,5 +132,4 @@ if __name__ == "__main__":
     df = df.rename(columns={'Absolute Path': 'Absolute_Path'})
     df['Numerical'] = numerical(df['Label'])
     df['Width'], df['Height'], df['Channels'] = img_shape(df['Absolute_Path'])
-    #df.to_csv('result.csv')
-    draw(df, 'cat')
+    draw_histogram(df, 'cat')
